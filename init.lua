@@ -124,7 +124,7 @@ vim.opt.breakindent = true
 -- Save undo history
 vim.opt.undofile = true
 
--- Auto Save on un-focus
+-- Auto Save on un-focus (git confirm)
 vim.cmd [[ autocmd FocusLost * nested silent! wa ]]
 
 -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
