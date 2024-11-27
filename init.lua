@@ -127,6 +127,9 @@ vim.opt.undofile = true
 -- Auto Save on un-focus (git confirm)
 vim.cmd [[ autocmd FocusLost * nested silent! wa ]]
 
+-- set default tab shift width
+vim.opt.shiftwidth = 2
+
 -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
@@ -204,6 +207,30 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
   callback = function()
     vim.highlight.on_yank()
+  end,
+})
+
+-- auto comand to specify project paths for python and other environments
+local project_python_paths = {
+  ['/home/soap/projects/goldfish'] = '/home/soap/venvs/jupyter-env/bin/python3',
+}
+
+vim.api.nvim_create_autocmd('VimEnter', {
+  callback = function()
+    local cwd = vim.fn.getcwd()
+    if project_python_paths[cwd] then
+      vim.g.python3_host_prog = project_python_paths[cwd]
+      vim.env.QUARTO_PYTHON = '/home/soap/venvs/jupyter-env/bin/python3'
+
+      -- Automatically activate the virtual environment in Neovim terminals
+      vim.api.nvim_create_autocmd('TermOpen', {
+        pattern = '*',
+        callback = function()
+          local activate_cmd = 'source ' .. project_python_paths[cwd]:gsub('/bin/python3', '/bin/activate') .. '\n'
+          vim.api.nvim_chan_send(vim.b.terminal_job_id, activate_cmd)
+        end,
+      })
+    end
   end,
 })
 
@@ -620,7 +647,13 @@ require('lazy').setup({
           },
         },
         -- gopls = {},
-        -- pyright = {},
+        pyright = {
+          settings = {
+            python = {
+              pythonPath = '/home/soap/venvs/jupyter-env/bin/python3', -- make sure to change this depending on which python environment you want (data sicence, scripting, backend, etc) may break if path not valid
+            },
+          },
+        },
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -832,6 +865,7 @@ require('lazy').setup({
             group_index = 0,
           },
           { name = 'nvim_lsp' },
+          { name = 'otter' },
           { name = 'luasnip' },
           { name = 'path' },
         },
@@ -903,7 +937,7 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'r', 'python' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -938,6 +972,9 @@ require('lazy').setup({
   require 'kickstart.plugins.autopairs',
   require 'kickstart.plugins.neo-tree',
   require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+
+  -- Custom plugins
+  require 'custom.plugins.quarto', -- this adds custom quarto capability to nvim
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
