@@ -1,0 +1,33 @@
+return {
+  -- We still use nvim-lspconfig, but we configure clangd manually
+  'neovim/nvim-lspconfig',
+
+  -- Load immediately (not lazy) so it wins over Kickstart defaults
+  lazy = false,
+
+  config = function()
+    local lspconfig = require 'lspconfig'
+    local util = require 'lspconfig.util'
+
+    -- Capabilities (integrates with nvim-cmp if present)
+    local capabilities = vim.lsp.protocol.make_client_capabilities()
+    pcall(function()
+      capabilities = vim.tbl_deep_extend('force', capabilities, require('cmp_nvim_lsp').default_capabilities())
+    end)
+
+    lspconfig.clangd.setup {
+      cmd = {
+        'clangd',
+        '--background-index',
+        '--suggest-missing-includes',
+        '--query-driver=/home/soap/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-*',
+      },
+
+      root_dir = util.root_pattern('compile_commands.json', 'platformio.ini', '.git'),
+
+      filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
+
+      capabilities = capabilities,
+    }
+  end,
+}

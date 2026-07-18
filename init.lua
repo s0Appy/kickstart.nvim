@@ -255,11 +255,15 @@ vim.opt.rtp:prepend(lazypath)
 --
 --  To update plugins you can run
 --    :Lazy update
---
+
+vim.g.sleuth_c = 0
+vim.g.sleuth_cpp = 0
+vim.g.sleuth_arduino = 0
+
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  --'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -583,6 +587,26 @@ require('lazy').setup({
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
+          -- add custom
+          --
+          -- Tinymist-specific keymaps
+          if client and client.name == 'tinymist' then
+            vim.keymap.set('n', '<leader>tp', function()
+              client:exec_cmd {
+                command = 'tinymist.pinMain',
+                arguments = { vim.api.nvim_buf_get_name(0) },
+              }
+            end, { buffer = event.buf, desc = '[T]inymist [P]in main file' })
+
+            vim.keymap.set('n', '<leader>tu', function()
+              client:exec_cmd {
+                command = 'tinymist.pinMain',
+                arguments = { vim.v.null },
+              }
+            end, { buffer = event.buf, desc = '[T]inymist [U]npin main file' })
+          end
+
+          --end custom
           if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
             local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
@@ -636,25 +660,28 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         clangd = {
-          cmd = { 'clangd', '--background-index', '--suggest-missing-includes' },
-          filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
-          settings = {
-            clangd = {
-              completion = {
-                includeFixes = true,
-              },
-            },
+          cmd = {
+            'clangd',
+            '--enable-config',
+            '--background-index',
+            '--query-driver=/home/soap/.platformio/packages/toolchain-gccarmnoneeabi/bin/arm-none-eabi-*',
+            '--header-insertion=never',
+            '--clang-tidy=false',
           },
+          filetypes = { 'c', 'cpp', 'objc', 'objcpp' },
         },
         -- gopls = {},
         pyright = {
           settings = {
             python = {
-              pythonPath = '/home/soap/venvs/jupyter-env/bin/python3', -- make sure to change this depending on which python environment you want (data sicence, scripting, backend, etc) may break if path not valid
+              venvPath = '.',
+              venv = '.venv',
+              --'/home/soap/venvs/jupyter-env/bin/python3', -- make sure to change this depending on which python environment you want (data sicence, scripting, backend, etc) may break if path not valid
             },
           },
         },
-        -- rust_analyzer = {},
+        rust_analyzer = {},
+        codelldb = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -676,6 +703,14 @@ require('lazy').setup({
               -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
               -- diagnostics = { disable = { 'missing-fields' } },
             },
+          },
+        },
+
+        tinymist = {
+          settings = {
+            formatterMode = 'typstyle', -- or "typstfmt"
+            exportPdf = 'onSave', -- or "onType"
+            semanticTokens = 'disable',
           },
         },
       }
@@ -884,7 +919,7 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'miniwinter'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
@@ -974,14 +1009,14 @@ require('lazy').setup({
   require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- Custom plugins
-  require 'custom.plugins.quarto', -- this adds custom quarto capability to nvim
+  require 'custom.plugins.init', -- add custom plugins
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
